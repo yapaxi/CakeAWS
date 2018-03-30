@@ -31,8 +31,8 @@ CakeTaskBuilder<ActionTask> PublishToAmazon(string outputDir, string zipFile, st
 {
     var settings = new UpdateFunctionCodeSettings()
     {
-        AccessKey = amazonAK ?? throw new ArgumentNullException("Access key is not provided"),
-        SecretKey = amazonSK ?? throw new ArgumentNullException("Secret key is not provided"),
+        AccessKey = amazonAK ?? throw new ArgumentNullException(nameof(amazonAK)),
+        SecretKey = amazonSK ?? throw new ArgumentNullException(nameof(amazonSK)),
         Region = RegionEndpoint.USEast2,
         ZipPath = zipFile
     };
