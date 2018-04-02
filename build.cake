@@ -33,7 +33,6 @@ CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test
 
 // =================   WORKFLOW  =================
 
-
 var task = Task($"build-cake-root")
   .IsDependentOn(amazonModule.RestoreSolution(sln))
   .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))

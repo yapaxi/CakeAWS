@@ -7,12 +7,12 @@ var amazonModule = MODULE(() =>
 
   return new 
   {
-    RestoreSolution = METHOD((string sln) => Task("restore").Does((ctx) => 
+    RestoreSolution = METHOD((string sln) => UniqueTask("restore").Does((ctx) => 
     {
       NuGetRestore(sln);
     })),
 
-    PublishSolution = METHOD((string sln, string publishDir, string outputDir) => Task("publish").Does((ctx) => 
+    PublishSolution = METHOD((string sln, string publishDir, string outputDir) => UniqueTask("publish").Does((ctx) => 
     {
       if (DirectoryExists(publishDir))
       {
@@ -28,12 +28,12 @@ var amazonModule = MODULE(() =>
       });
     })),
 
-    ZipPublishResult = METHOD((string outputDir, string zipFile) => Task("zip").Does((ctx) => 
+    ZipPublishResult = METHOD((string outputDir, string zipFile) => UniqueTask("zip").Does((ctx) => 
     {
       Zip(outputDir, zipFile);
     })),
 
-    PublishToAmazon = METHOD((string outputDir, string zipFile, string amazonAK, string amazonSK) => Task("publish-to-amazon").Does(async (ctx) => 
+    PublishToAmazon = METHOD((string outputDir, string zipFile, string amazonAK, string amazonSK) => UniqueTask("publish-to-amazon").Does(async (ctx) => 
     {
         var settings = new UpdateFunctionCodeSettings()
         {
