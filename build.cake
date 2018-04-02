@@ -35,10 +35,10 @@ CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test
 
 
 var task = Task($"build-cake-root")
-  .IsDependentOn(RestoreSolution(sln))
-  .IsDependentOn(PublishSolution(sln, publishDir, outputDir))
-  .IsDependentOn(ZipPublishResult(outputDir, zipFile))
-  .IsDependentOn(PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
+  .IsDependentOn(amazonModule.RestoreSolution(sln))
+  .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
+  .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
+  .IsDependentOn(amazonModule.PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
   .IsDependentOn(TestPost(apiHost, "azaza@asasd.dd"))
 ;
 
