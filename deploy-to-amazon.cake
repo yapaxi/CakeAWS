@@ -1,9 +1,12 @@
 #addin "Cake.AWS.Lambda"
 #load "module.cake"
+#addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.Core&version=3.3.21.20
+#addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.APIGateway&version=3.3.16.3
+#addin nuget:http://localhost:8624/nuget/Nuget/?package=Cake.AWS.APIGateway&version=1.0.3.0
 
 var amazonModule = MODULE(() => 
 {
-  var state = new Dictionary<string, string>();
+  var state = new Dictionary<string, object>();
 
   return new 
   {
@@ -44,6 +47,20 @@ var amazonModule = MODULE(() =>
         };
 
         var version = await UpdateLambdaFunctionCode("TestFunction", settings);
+    })),
+
+    GenerateSwaggerApiFile = METHOD((string swaggerApiGeneratorPath, string generatedSwaggerApiPath) => UniqueTask("generate-swagger-api-file").Does(async (ctx) => 
+    {
+      DotNetCoreExecute(swaggerApiGeneratorPath, ProcessArgumentBuilder.FromString(generatedSwaggerApiPath));
+    })),
+
+    PublishSwaggerApiFile = METHOD((string generatedSwaggerApiPath, string amazonAK, string amazonSK) => UniqueTask("publish-swagger-api-file").Does(async (ctx) => 
+    {
+      await ImportRestApi(generatedSwaggerApiPath, new PublishApiGatewayConfig() {
+        AccessKey = amazonAK,
+        SecretKey = amazonSK,
+        RegionEndpoint = RegionEndpoint.USEast2
+      });
     }))
   };
 })();
