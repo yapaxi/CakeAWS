@@ -1,6 +1,7 @@
 Param(
     [switch]$ForceNew,
-    [string]$AmazonApi
+    [string]$AmazonApi,
+    [string]$AmazonApiId
 )
 
 $args = '-sln="C:\Users\igor.tishkin\Documents\Visual Studio 2017\Projects\TestFunction\LambdaTest.sln"'`
@@ -14,6 +15,10 @@ if ($ForceNew.IsPresent) {
 
 if ($AmazonApi) {
   $args = $args + "-amazonApi=`"$AmazonApi`""
+}
+
+if ($AmazonApiId) {
+  $args = $args + "-amazonApiId=`"$AmazonApiId`""
 }
 
 .\build.ps1 -ScriptArgs $args

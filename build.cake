@@ -24,7 +24,7 @@ var zipFile = Directory(publishDir)
 
 var sln = Argument<string>("sln");
 
-var apiHost = Argument<string>("amazonApi") 
+var apiHost = Argument<string>("amazonApi", null) 
               ?? EnvironmentVariable("MY_AMAZON_API") 
               ?? throw new Exception("MY_AMAZON_API env variable or amazonApi param is not provided");
 
@@ -32,7 +32,9 @@ var amazonAK = EnvironmentVariable("MY_AMAZON_AK") ?? throw new Exception("MY_AM
 
 var amazonSK = EnvironmentVariable("MY_AMAZON_SK") ?? throw new Exception("MY_AMAZON_SK env variable is not provided");
 
-var amazonApiId = Argument<string>("forceNew") == "true" ? null : NIW(EnvironmentVariable("MY_AMAZON_API_ID"));
+var amazonApiId = Argument<string>("forceNew", null) == "true" 
+                  ? null 
+                  : (Argument<string>("amazonApiId", null) ?? NIW(EnvironmentVariable("MY_AMAZON_API_ID")));
 
 
 // =================   CODE  =================
@@ -52,12 +54,13 @@ CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test
 // =================   WORKFLOW  =================
 
 var task = Task($"build-cake-root")
- // .IsDependentOn(amazonModule.RestoreSolution(sln))
- // .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
- // .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
- // .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath, "SomeApi2", "1.0.0"))
- // .IsDependentOn(amazonModule.PublishSwaggerApiFile(apiPath, amazonAK, amazonSK, amazonApiId))
- // .IsDependentOn(amazonModule.PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
+  .IsDependentOn(amazonModule.RestoreSolution(sln))
+  .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
+  .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
+  .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath, "SomeApi2", "1.0.0"))
+  .IsDependentOn(amazonModule.PublishSwaggerApiFile(apiPath, amazonAK, amazonSK, amazonApiId))
+  .IsDependentOn(amazonModule.PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
+  //HERE MUST BE API DEPLOY
   .IsDependentOn(TestPost(apiHost, "azaza@asasd.dd"))
 ;
 
