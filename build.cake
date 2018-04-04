@@ -5,21 +5,34 @@
 
 // =================   ARGUMENTS  =================
 
+string NIW(string str) => string.IsNullOrWhiteSpace(str) ? null : str;
 
 var publishDir = Directory(Argument<string>("publishDir")) 
                + Directory(DateTime.UtcNow.ToString("yyyy-MM-dd-HH-mm-ss-fff"));
+
 var outputDir = Directory(publishDir) 
               + Directory("bin");
+
 var swaggerGenPath = outputDir 
                    + File("ApiGen.dll");
+
 var apiPath = outputDir 
             + File("api.json");
+
 var zipFile = Directory(publishDir) 
             + File(Argument<string>("lambdaName") + ".zip");
+
 var sln = Argument<string>("sln");
-var apiHost = EnvironmentVariable("MY_AMAZON_API") ?? throw new Exception("MY_AMAZON_API env variable is not provided");
+
+var apiHost = Argument<string>("amazonApi") 
+              ?? EnvironmentVariable("MY_AMAZON_API") 
+              ?? throw new Exception("MY_AMAZON_API env variable or amazonApi param is not provided");
+
 var amazonAK = EnvironmentVariable("MY_AMAZON_AK") ?? throw new Exception("MY_AMAZON_AK env variable is not provided");
+
 var amazonSK = EnvironmentVariable("MY_AMAZON_SK") ?? throw new Exception("MY_AMAZON_SK env variable is not provided");
+
+var amazonApiId = Argument<string>("forceNew") == "true" ? null : NIW(EnvironmentVariable("MY_AMAZON_API_ID"));
 
 
 // =================   CODE  =================
@@ -27,7 +40,7 @@ var amazonSK = EnvironmentVariable("MY_AMAZON_SK") ?? throw new Exception("MY_AM
 
 CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test-post").Does((ctx) => 
 {
-    var xx = HttpPost($"{apiHost}/XXX/xxx", new HttpSettings() 
+    var xx = HttpPost($"{apiHost}/ZZZ/azaza", new HttpSettings() 
     {
       RequestBody = System.Text.Encoding.UTF8.GetBytes($"{{ \"email\": \"{email}\" }}"),
       Headers = { ["Content-Type"] = "application/json" }
@@ -39,13 +52,13 @@ CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test
 // =================   WORKFLOW  =================
 
 var task = Task($"build-cake-root")
-  .IsDependentOn(amazonModule.RestoreSolution(sln))
-  .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
-  .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
-  .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath))
-  .IsDependentOn(amazonModule.PublishSwaggerApiFile(apiPath, amazonAK, amazonSK))
+ // .IsDependentOn(amazonModule.RestoreSolution(sln))
+ // .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
+ // .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
+ // .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath, "SomeApi2", "1.0.0"))
+ // .IsDependentOn(amazonModule.PublishSwaggerApiFile(apiPath, amazonAK, amazonSK, amazonApiId))
  // .IsDependentOn(amazonModule.PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
- // .IsDependentOn(TestPost(apiHost, "azaza@asasd.dd"))
+  .IsDependentOn(TestPost(apiHost, "azaza@asasd.dd"))
 ;
 
 RunTarget(task.Task.Name);
