@@ -64,7 +64,7 @@ CakeTaskBuilder<ActionTask> TestPost(string email) => Task("test-post").Does(asy
 
 // =================   WORKFLOW  =================
 
-var publishSwaggerModel = new PublishApiGatewayConfig() 
+var createApiConfig = new PublishApiGatewayConfig() 
 {
   AccessKey = amazonAK,
   SecretKey = amazonSK,
@@ -72,9 +72,15 @@ var publishSwaggerModel = new PublishApiGatewayConfig()
   SwaggerApiFilePath = apiPath,
   RestApiId = amazonApiId,
   FailOnWarnings = true,
-  PutMode = Amazon.APIGateway.PutMode.Overwrite,
-  EnableDeployment = enableDeployment,
-  DeploymentStageName = deploymentStage
+  PutMode = Amazon.APIGateway.PutMode.Overwrite
+};
+
+var deploymentConfig = new DeployApiGatewayConfig()
+{
+  AccessKey = amazonAK,
+  SecretKey = amazonSK,
+  RegionEndpoint = RegionEndpoint.USEast2,
+  StageName = deploymentStage
 };
 
 var task = Task($"build-cake-root")
@@ -83,7 +89,11 @@ var task = Task($"build-cake-root")
   .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
   .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath, "SomeApi2", "1.0.0"))
   .IsDependentOn(amazonModule.PublishLambdaToAWS(outputDir, zipFile, amazonAK, amazonSK))
-  .IsDependentOn(amazonModule.PublishSwaggerApiFileToAWS(publishSwaggerModel))
+  .IsDependentOn(amazonModule.CreateOrChangeApi(
+    createApiConfig, 
+    (result) => deploymentConfig.RestApiId = result.ApiId
+   ))
+  .IsDependentOn(amazonModule.DeployApi(deploymentConfig))
   .IsDependentOn(TestPost("azaza@asasd.dd"))
 ;
 

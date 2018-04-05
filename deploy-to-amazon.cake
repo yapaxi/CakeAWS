@@ -2,11 +2,13 @@
 #load "module.cake"
 #addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.Core&version=3.3.21.20
 #addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.APIGateway&version=3.3.16.3
-#addin nuget:http://localhost:8624/nuget/Nuget/?package=Cake.AWS.APIGateway&version=1.0.7.0
+#addin nuget:http://localhost:8624/nuget/Nuget/?package=Cake.AWS.APIGateway&version=1.0.8.0
+
+class CreateApiResult {public string ApiId {get;set;}}
 
 var amazonModule = MODULE(() => 
 {
-  var state = new Dictionary<string, object>();
+  var state = new Dictionary<string, Dictionary<string, string>>();
 
   return new 
   {
@@ -54,9 +56,15 @@ var amazonModule = MODULE(() =>
       DotNetCoreExecute(swaggerApiGeneratorPath, ProcessArgumentBuilder.FromString($"\"{generatedSwaggerApiPath}\" \"{apiName}\" \"{apiVersion}\""));
     })),
 
-    PublishSwaggerApiFileToAWS = METHOD((PublishApiGatewayConfig config) => UniqueTask("publish-swagger-api-file").Does(async (ctx) => 
+    CreateOrChangeApi = METHOD((PublishApiGatewayConfig config, Action<CreateApiResult> output) => UniqueTask("create-or-change-api-aws-api-gateway").Does(async (ctx) => 
     {
-      await PublishRestApi(config);
+      var apiId = await CreateOrChangeRestApi(config);
+      output?.Invoke(new CreateApiResult() { ApiId = apiId });
+    })),
+
+    DeployApi = METHOD((DeployApiGatewayConfig config) => UniqueTask("deploy-api-aws-api-gateway").Does(async (ctx) => 
+    {
+      await DeployRestApi(config);
     }))
   };
 })();
