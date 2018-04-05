@@ -2,7 +2,7 @@
 #load "module.cake"
 #addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.Core&version=3.3.21.20
 #addin nuget:http://localhost:8624/nuget/Nuget/?package=AWSSDK.APIGateway&version=3.3.16.3
-#addin nuget:http://localhost:8624/nuget/Nuget/?package=Cake.AWS.APIGateway&version=1.0.4.0
+#addin nuget:http://localhost:8624/nuget/Nuget/?package=Cake.AWS.APIGateway&version=1.0.7.0
 
 var amazonModule = MODULE(() => 
 {
@@ -36,7 +36,7 @@ var amazonModule = MODULE(() =>
       Zip(outputDir, zipFile);
     })),
 
-    PublishToAmazon = METHOD((string outputDir, string zipFile, string amazonAK, string amazonSK) => UniqueTask("publish-to-amazon").Does(async (ctx) => 
+    PublishLambdaToAWS = METHOD((string outputDir, string zipFile, string amazonAK, string amazonSK) => UniqueTask("publish-to-amazon").Does(async (ctx) => 
     {
         var settings = new UpdateFunctionCodeSettings()
         {
@@ -54,15 +54,9 @@ var amazonModule = MODULE(() =>
       DotNetCoreExecute(swaggerApiGeneratorPath, ProcessArgumentBuilder.FromString($"\"{generatedSwaggerApiPath}\" \"{apiName}\" \"{apiVersion}\""));
     })),
 
-    PublishSwaggerApiFile = METHOD((string generatedSwaggerApiPath, string amazonAK, string amazonSK, string amazonApiId) => UniqueTask("publish-swagger-api-file").Does(async (ctx) => 
+    PublishSwaggerApiFileToAWS = METHOD((PublishApiGatewayConfig config) => UniqueTask("publish-swagger-api-file").Does(async (ctx) => 
     {
-      var model = new PublishApiGatewayConfig() {
-        AccessKey = amazonAK,
-        SecretKey = amazonSK,
-        RegionEndpoint = RegionEndpoint.USEast2
-      };
-
-      await PublishRestApi(generatedSwaggerApiPath, model, restApiId: amazonApiId);
+      await PublishRestApi(config);
     }))
   };
 })();

@@ -36,13 +36,24 @@ var amazonApiId = Argument<string>("forceNew", null) == "true"
                   ? null 
                   : (Argument<string>("amazonApiId", null) ?? NIW(EnvironmentVariable("MY_AMAZON_API_ID")));
 
+var deploymentStage = Argument<string>("deploymentStage", null);
+var enableDeployment = !string.IsNullOrWhiteSpace(deploymentStage);
+
+if (enableDeployment)
+{
+  Information($"API {amazonApiId} will be deployed to stage {deploymentStage}");
+}
 
 // =================   CODE  =================
 
 
-CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test-post").Does((ctx) => 
+CakeTaskBuilder<ActionTask> TestPost(string email) => Task("test-post").Does(async (ctx) => 
 {
-    var xx = HttpPost($"{apiHost}/ZZZ/azaza", new HttpSettings() 
+    Information("Waiting for 3 seconds...");
+    await System.Threading.Tasks.Task.Delay(3000);
+    var method = $"{apiHost}/{deploymentStage}/azaza";
+    Information($"Calling {method}");
+    var xx = HttpPost(method, new HttpSettings() 
     {
       RequestBody = System.Text.Encoding.UTF8.GetBytes($"{{ \"email\": \"{email}\" }}"),
       Headers = { ["Content-Type"] = "application/json" }
@@ -53,15 +64,27 @@ CakeTaskBuilder<ActionTask> TestPost(string apiHost, string email) => Task("test
 
 // =================   WORKFLOW  =================
 
+var publishSwaggerModel = new PublishApiGatewayConfig() 
+{
+  AccessKey = amazonAK,
+  SecretKey = amazonSK,
+  RegionEndpoint = RegionEndpoint.USEast2,
+  SwaggerApiFilePath = apiPath,
+  RestApiId = amazonApiId,
+  FailOnWarnings = true,
+  PutMode = Amazon.APIGateway.PutMode.Overwrite,
+  EnableDeployment = enableDeployment,
+  DeploymentStageName = deploymentStage
+};
+
 var task = Task($"build-cake-root")
   .IsDependentOn(amazonModule.RestoreSolution(sln))
   .IsDependentOn(amazonModule.PublishSolution(sln, publishDir, outputDir))
   .IsDependentOn(amazonModule.ZipPublishResult(outputDir, zipFile))
   .IsDependentOn(amazonModule.GenerateSwaggerApiFile(swaggerGenPath, apiPath, "SomeApi2", "1.0.0"))
-  .IsDependentOn(amazonModule.PublishSwaggerApiFile(apiPath, amazonAK, amazonSK, amazonApiId))
-  .IsDependentOn(amazonModule.PublishToAmazon(outputDir, zipFile, amazonAK, amazonSK))
-  //HERE MUST BE API DEPLOY
-  .IsDependentOn(TestPost(apiHost, "azaza@asasd.dd"))
+  .IsDependentOn(amazonModule.PublishLambdaToAWS(outputDir, zipFile, amazonAK, amazonSK))
+  .IsDependentOn(amazonModule.PublishSwaggerApiFileToAWS(publishSwaggerModel))
+  .IsDependentOn(TestPost("azaza@asasd.dd"))
 ;
 
 RunTarget(task.Task.Name);
